@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open in Rewind</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin:0; background:#080808; color:#e7e7e7; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; line-height:1.6; }
+  main { max-width:440px; margin:0 auto; padding:96px 24px; text-align:center; }
+  .logo { font-size:44px; font-weight:800; letter-spacing:-.03em; color:#fff; }
+  .tag { color:#8a8a8a; margin:6px 0 44px; font-size:15px; }
+  .btn { display:block; width:100%; box-sizing:border-box; padding:16px; border-radius:14px; font-weight:700; font-size:15px; text-decoration:none; margin-top:14px; }
+  .primary { background:#FF3355; color:#000; }
+  .ghost { background:#141414; color:#e7e7e7; border:1px solid #262626; }
+  .hint { color:#6a6a6a; font-size:13px; margin-top:28px; }
+  a.link { color:#FF3355; }
+</style>
+</head>
+<body>
+<main>
+  <div class="logo">Rewind.</div>
+  <p class="tag" id="tag">Someone shared an event with you.</p>
+
+  <a class="btn primary" id="open" href="#">Open in Rewind</a>
+  <a class="btn ghost" href="https://apps.apple.com/app/id6805111667">Get Rewind on the App&nbsp;Store</a>
+
+  <p class="hint">Tap “Open in Rewind” if you already have the app. Otherwise, download it — the event will be waiting for you.</p>
+</main>
+
+<script>
+  // Type de lien déduit du dossier : /e/ = souvenir, /o/ = event officiel.
+  var KIND = "official-event";
+  var id = new URLSearchParams(location.search).get("id");
+  var openBtn = document.getElementById("open");
+  if (id) {
+    openBtn.href = "rewind://" + KIND + "/" + encodeURIComponent(id);
+  } else {
+    openBtn.style.display = "none";
+    document.getElementById("tag").textContent = "This link looks incomplete.";
+  }
+</script>
+</body>
+</html>
