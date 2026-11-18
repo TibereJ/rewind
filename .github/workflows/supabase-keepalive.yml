@@ -1,0 +1,63 @@
+# Empêche la mise en veille du projet Supabase de Rewind.
+#
+# POURQUOI : sur le plan gratuit, Supabase met un projet en pause après environ
+# 7 jours de faible activité. Ce n'est pas une question de volume — l'app est à
+# 2,6 % de la limite de base de données — mais d'inactivité. Une app endormie
+# ne répond plus, sans prévenir personne.
+#
+# POURQUOI ICI : ce dépôt est public, donc GitHub Actions y est gratuit et
+# illimité. Faire ce réveil depuis une tâche Claude coûterait des tokens à
+# chaque exécution, pour lancer une seule requête HTTP.
+#
+# FRÉQUENCE : une fois par jour. Le seuil de Supabase est à 7 jours, donc une
+# exécution tous les 3 jours suffirait en théorie — mais GitHub retarde, voire
+# saute, des exécutions planifiées quand ses serveurs sont chargés. Comme
+# chaque exécution est gratuite, mieux vaut une marge large : il faudrait
+# 7 ratés d'affilée pour que le projet s'endorme.
+#
+# ⚠️ GitHub désactive les workflows planifiés d'un dépôt resté 60 jours sans
+# aucun commit, et prévient le propriétaire par mail. Si ce dépôt devient
+# dormant, vérifier que ce workflow est toujours actif.
+
+name: Réveil Supabase
+
+on:
+  schedule:
+    - cron: "17 6 * * *" # tous les jours à 6 h 17 UTC
+  workflow_dispatch: # et déclenchable à la main depuis l'onglet Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Interroger la base
+        env:
+          URL: ${{ secrets.SUPABASE_URL }}
+          KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$KEY" ]; then
+            echo "::error::Secrets SUPABASE_URL / SUPABASE_ANON_KEY absents du dépôt."
+            exit 1
+          fi
+
+          # Une vraie requête de lecture, la plus légère possible : on demande
+          # le NOMBRE de profils sans ramener une seule ligne. C'est ce qui
+          # compte comme activité côté Supabase.
+          code=$(curl -s -o /tmp/reponse.txt -w "%{http_code}" \
+            -H "apikey: $KEY" \
+            -H "Authorization: Bearer $KEY" \
+            -H "Prefer: count=exact" \
+            -H "Range: 0-0" \
+            "$URL/rest/v1/profiles?select=id")
+
+          echo "Réponse HTTP : $code"
+
+          # 200 et 206 sont tous deux normaux (206 = réponse partielle, c'est
+          # ce que renvoie l'en-tête Range).
+          if [ "$code" != "200" ] && [ "$code" != "206" ]; then
+            echo "::error::Le projet Supabase n'a pas répondu correctement (HTTP $code)."
+            cat /tmp/reponse.txt
+            exit 1
+          fi
+
+          echo "Projet réveillé."
